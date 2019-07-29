@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="world" default="empty"/> 
+  <arg name="paused" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="gui" default="true"/>
+  <arg name="headless" default="false"/>
+  <arg name="debug" default="false"/>
+  
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <!-- <arg name="world_name" value="$(find visionbot_gazebo)/worlds/visionbot.world"/> -->
+    <!--arg name="world_name" value="$(find visionbot_gazebo)/worlds/mybot.world"/-->
+    <arg name="world_name" value="$(find visionbot_gazebo)/worlds/turtlebot_playground.world"/>
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="headless" value="$(arg headless)"/>
+    <arg name="debug" value="$(arg debug)"/>
+  </include>
+
+  <!--robot model -->
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find visionbot_description)/urdf/visionbot.xacro'"/> 
+
+  <node name="visionbot_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
+   args="-urdf -param robot_description -model visionbot -x -3 -y 0 -z 0" />
+
+  <!--automate human movement using ros node-->
+  <!--node name="animated_box0" pkg="rostopic" type="rostopic"
+   args="pub animated_box0/target_goal geometry_msgs/Twist
+   '{linear: {x: 0.0, y: -4.5, z: 0.0}, 
+   angular: {x: 0.0, y: 0.0, z: 0.0}}' -r 2"/-->
+  <node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0 0 0 0 0 0 map odom 10" />
+  <!--node name="random_driver" type="random_driver.cc" pkg="random_human_driver" output="screen" /-->
+
+  <!--human models-->
+  <arg name="ns_animated0" value="animated_box0"/>
+  <group ns ="$(arg ns_animated0)">
+    <node name="move_base" pkg="move_base" type="move_base" output="screen">
+      <rosparam file="$(find visionbot_gazebo)/include/move_base_config.yaml" command="load" />
+      <param name="global_costmap/robot_base_frame" value = "$(arg ns_animated0)_odom"/>
+      <!-- <remap from="odom" to="$(arg ns_animated0)_odom"/> -->
+    <!-- <param name="base_link" value="chassis"> -->
+    <!-- <remap from="map" to="animated_box0/map"/> -->
+    <!-- <remap from="base_scan" to="visionbot/laser/scan"/>
+    <param name="move_base/DWAPlannerROS/yaw_goal_tolerance" value="1.0"/>
+    <param name="move_base/DWAPlannerROS/xy_goal_tolerance" value="1.0"/> -->
+    </node>
+  </group>
+
+  <arg name="ns_animated1" value="animated_box1"/>
+  <group ns ="$(arg ns_animated1)">
+    <node name="move_base" pkg="move_base" type="move_base" output="screen">
+      <rosparam file="$(find visionbot_gazebo)/include/move_base_config.yaml" command="load" />
+      <param name="global_costmap/robot_base_frame" value = "$(arg ns_animated1)_odom"/>
+    </node>
+  </group>
+
+
+</launch>
